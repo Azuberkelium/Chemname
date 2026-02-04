@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nomenclature Lab: Master Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; touch-action: manipulation; }
+        .chem-font { font-family: 'JetBrains Mono', monospace; }
+        .sub { vertical-align: sub; font-size: 0.6em; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        
+        /* Map Connector Lines */
+        .map-line {
+            position: absolute;
+            background-color: #cbd5e1;
+            z-index: 0;
+            transition: background-color 0.5s;
+        }
+        .map-line.unlocked { background-color: #4f46e5; }
+        
+        /* Level Nodes */
+        .level-node {
+            z-index: 10;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .level-node:active { transform: scale(0.95); }
+        .level-node.locked { filter: grayscale(1); opacity: 0.7; cursor: not-allowed; }
+    </style>
+</head>
+<body class="text-slate-800 h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 shadow-sm z-30 shrink-0 relative">
+        <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button onclick="goToMenu()" class="p-2 -ml-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors" title="Map">
+                    <i data-lucide="map" class="w-6 h-6"></i>
+                </button>
+                <h1 class="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                    <span class="hidden sm:inline">Chem</span><span class="text-indigo-600">Lab</span>
+                </h1>
+            </div>
+            
+            <div id="game-stats" class="hidden flex items-center gap-4">
+                <!-- Hearts -->
+                <div class="flex gap-1" id="hearts-container">
+                    <i data-lucide="heart" class="w-6 h-6 text-rose-500 fill-rose-500 heart-icon"></i>
+                    <i data-lucide="heart" class="w-6 h-6 text-rose-500 fill-rose-500 heart-icon"></i>
+                    <i data-lucide="heart" class="w-6 h-6 text-rose-500 fill-rose-500 heart-icon"></i>
+                </div>
+                <!-- Timer -->
+                <div class="font-mono font-bold text-slate-700 w-16 text-right" id="timer-display">00:00</div>
+            </div>
+
+            <div id="menu-controls" class="flex items-center gap-3">
+                <button onclick="toggleAchievements()" class="relative p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-colors">
+                    <i data-lucide="trophy" class="w-6 h-6"></i>
+                    <span id="achievement-badge" class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white hidden"></span>
+                </button>
+                <button onclick="toggleSettings()" class="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 relative overflow-hidden bg-slate-50">
+        
+        <!-- MAP / MENU SCREEN -->
+        <div id="menu-screen" class="absolute inset-0 overflow-y-auto p-6 flex flex-col items-center justify-center fade-in">
+            <div class="max-w-lg w-full relative pt-10 pb-20">
+                <h2 class="text-3xl font-extrabold text-slate-900 text-center mb-2">Campaign Map</h2>
+                <p class="text-slate-500 text-center mb-12 text-sm">Master each group to unlock the next sector.</p>
+
+                <!-- Map Visualization -->
+                <div class="relative flex flex-col items-center gap-16">
+                    <!-- Connecting Lines (Vertical) -->
+                    <div class="absolute left-1/2 top-10 bottom-10 w-1 bg-slate-200 -translate-x-1/2 z-0"></div>
+                    
+                    <!-- Level 1 Node -->
+                    <button onclick="startGame(1)" id="node-1" class="level-node relative group w-64 bg-white p-4 rounded-2xl shadow-lg border-2 border-indigo-100 hover:border-indigo-500 text-left z-10">
+                        <div class="absolute -left-3 -top-3 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-md">1</div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Covalent</span>
+                            <i data-lucide="wind" class="w-4 h-4 text-indigo-400"></i>
+                        </div>
+                        <div class="text-lg font-bold text-slate-800">Non-Metal Gases</div>
+                        <div class="text-xs text-slate-400 mt-1 best-score" data-level="1">Best: --:--</div>
+                    </button>
+
+                    <!-- Level 2 Node -->
+                    <button onclick="startGame(2)" id="node-2" class="level-node locked relative group w-64 bg-white p-4 rounded-2xl shadow-lg border-2 border-emerald-100 hover:border-emerald-500 text-left z-10">
+                        <div class="absolute -left-3 -top-3 w-8 h-8 bg-slate-300 group-[.locked]:bg-slate-300 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold shadow-md">2</div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Ionic I</span>
+                            <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
+                        <div class="text-lg font-bold text-slate-800">Fixed Metals</div>
+                        <div class="text-xs text-slate-400 mt-1 best-score" data-level="2">Best: --:--</div>
+                        <div class="lock-icon absolute inset-0 bg-white/50 flex items-center justify-center rounded-2xl backdrop-blur-[1px] group-[.locked]:flex hidden">
+                            <i data-lucide="lock" class="w-6 h-6 text-slate-400"></i>
+                        </div>
+                    </button>
+
+                    <!-- Level 3 Node -->
+                    <button onclick="startGame(3)" id="node-3" class="level-node locked relative group w-64 bg-white p-4 rounded-2xl shadow-lg border-2 border-amber-100 hover:border-amber-500 text-left z-10">
+                        <div class="absolute -left-3 -top-3 w-8 h-8 bg-slate-300 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold shadow-md">3</div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Ionic II</span>
+                            <i data-lucide="settings-2" class="w-4 h-4 text-amber-400"></i>
+                        </div>
+                        <div class="text-lg font-bold text-slate-800">Transition Metals</div>
+                        <div class="text-xs text-slate-400 mt-1 best-score" data-level="3">Best: --:--</div>
+                         <div class="lock-icon absolute inset-0 bg-white/50 flex items-center justify-center rounded-2xl backdrop-blur-[1px] group-[.locked]:flex hidden">
+                            <i data-lucide="lock" class="w-6 h-6 text-slate-400"></i>
+                        </div>
+                    </button>
+
+                    <!-- Level 4 Node -->
+                    <button onclick="startGame(4)" id="node-4" class="level-node locked relative group w-64 bg-white p-4 rounded-2xl shadow-lg border-2 border-rose-100 hover:border-rose-500 text-left z-10">
+                        <div class="absolute -left-3 -top-3 w-8 h-8 bg-slate-300 bg-rose-500 rounded-full flex items-center justify-center text-white font-bold shadow-md">4</div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-bold text-rose-600 uppercase tracking-wider">Polyatomic</span>
+                            <i data-lucide="brackets" class="w-4 h-4 text-rose-400"></i>
+                        </div>
+                        <div class="text-lg font-bold text-slate-800">Complex Ions</div>
+                        <div class="text-xs text-slate-400 mt-1 best-score" data-level="4">Best: --:--</div>
+                         <div class="lock-icon absolute inset-0 bg-white/50 flex items-center justify-center rounded-2xl backdrop-blur-[1px] group-[.locked]:flex hidden">
+                            <i data-lucide="lock" class="w-6 h-6 text-slate-400"></i>
+                        </div>
+                    </button>
+                </div>
+                
+                <!-- Toggle Mode -->
+                <div class="mt-12 flex justify-center">
+                    <div class="bg-white p-1 rounded-xl shadow-sm border border-slate-200 inline-flex">
+                        <button onclick="setMode('normal')" id="mode-normal" class="px-4 py-2 rounded-lg text-sm font-bold transition-all bg-slate-800 text-white shadow-md">Name → Formula</button>
+                        <button onclick="setMode('reverse')" id="mode-reverse" class="px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:bg-slate-50">Formula → Name</button>
+                    </div>
+                </div>
+                <p class="text-center text-xs text-slate-400 mt-2" id="mode-desc">See the Name, type the Formula.</p>
+            </div>
+        </div>
+
+        <!-- GAME AREA -->
+        <div id="game-area" class="absolute inset-0 flex flex-col items-center justify-center p-4 hidden">
+            <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden relative fade-in" id="game-card">
+                
+                <!-- Progress Line -->
+                <div class="h-1 w-full bg-slate-100">
+                    <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div class="p-6 sm:p-8">
+                    <!-- Question Header -->
+                    <div class="text-center mb-6">
+                        <span id="level-tag" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-50 px-2 py-1 rounded-md mb-2 inline-block">Level 1</span>
+                        <h2 id="question-main" class="text-3xl font-extrabold text-slate-900 leading-tight">...</h2>
+                        <p id="question-sub" class="text-sm text-slate-500 mt-2 font-medium">Type the chemical formula</p>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="relative mb-4">
+                        <input type="text" id="answer-input" class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 text-center text-2xl font-bold rounded-2xl p-4 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all placeholder-slate-300 chem-font" placeholder="..." autocomplete="off">
+                    </div>
+
+                    <button onclick="checkAnswer()" id="submit-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-bold py-4 rounded-2xl shadow-lg shadow-indigo-200 transition-all text-lg flex items-center justify-center gap-2">
+                        Check Answer <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- Feedback / Results -->
+                    <div id="feedback-panel" class="hidden mt-6 bg-slate-50 rounded-2xl p-5 border border-slate-100 relative overflow-hidden">
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 id="feedback-title" class="text-lg font-bold">Correct!</h3>
+                                <button onclick="speakName()" class="p-2 bg-white rounded-full border border-slate-200 hover:bg-indigo-50 text-indigo-600 transition-colors" title="Pronounce">
+                                    <i data-lucide="volume-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            
+                            <div id="feedback-content" class="text-slate-600 text-sm mb-3"></div>
+                            
+                            <!-- Stats Grid -->
+                            <div class="grid grid-cols-2 gap-2 mb-4">
+                                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                                    <div class="text-[10px] text-slate-400 uppercase font-bold">Molar Mass</div>
+                                    <div class="text-sm font-mono font-bold text-slate-800" id="mass-display">-- g/mol</div>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-200">
+                                    <div class="text-[10px] text-slate-400 uppercase font-bold">Structure</div>
+                                    <div class="text-sm font-medium text-slate-800" id="structure-display">--</div>
+                                </div>
+                            </div>
+
+                            <button onclick="nextQuestion()" id="next-btn" class="w-full bg-slate-900 text-white font-bold py-3 rounded-xl hover:bg-slate-800 transition-all">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACHIEVEMENTS MODAL -->
+        <div id="achievements-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-300">
+                <div class="p-6 bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-100 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-amber-900">Hall of Fame</h3>
+                        <p class="text-amber-700/60 text-xs font-bold uppercase tracking-wider">Your Trophies</p>
+                    </div>
+                    <button onclick="toggleAchievements()" class="p-2 hover:bg-white/50 rounded-full transition-colors text-amber-900">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                <div class="p-6 max-h-[60vh] overflow-y-auto space-y-4" id="achievements-list">
+                    <!-- Achievements injected by JS -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- ATOMIC DATA FOR MASS CALC ---
+        const atomicWeights = {
+            H: 1.008, He: 4.0026, Li: 6.94, Be: 9.0122, B: 10.81, C: 12.011, N: 14.007, O: 15.999,
+            F: 18.998, Ne: 20.180, Na: 22.990, Mg: 24.305, Al: 26.982, Si: 28.085, P: 30.974,
+            S: 32.06, Cl: 35.45, K: 39.098, Ar: 39.948, Ca: 40.078, Sc: 44.956, Ti: 47.867,
+            V: 50.942, Cr: 51.996, Mn: 54.938, Fe: 55.845, Co: 58.933, Ni: 58.693, Cu: 63.546,
+            Zn: 65.38, Ga: 69.723, Ge: 72.63, As: 74.922, Se: 78.96, Br: 79.904, Kr: 83.798,
+            Rb: 85.468, Sr: 87.62, Y: 88.906, Zr: 91.224, Nb: 92.906, Mo: 95.95, Tc: 98,
+            Ru: 101.07, Rh: 102.91, Pd: 106.42, Ag: 107.87, Cd: 112.41, In: 114.82, Sn: 118.71,
+            Sb: 121.76, Te: 127.60, I: 126.90, Xe: 131.29, Cs: 132.91, Ba: 137.33, La: 138.91,
+            Ce: 140.12, Pr: 140.91, Nd: 144.24, Pm: 145, Sm: 150.36, Eu: 151.96, Gd: 157.25,
+            Tb: 158.93, Dy: 162.50, Ho: 164.93, Er: 167.26, Tm: 168.93, Yb: 173.05, Lu: 174.97,
+            Hf: 178.49, Ta: 180.95, W: 183.84, Re: 186.21, Os: 190.23, Ir: 192.22, Pt: 195.08,
+            Au: 196.97, Hg: 200.59, Tl: 204.38, Pb: 207.2, Bi: 208.98, Po: 209, At: 210, Rn: 222
+        };
+
+        // --- DATABASE ---
+        const levels = {
+            1: [
+                {n:"Carbon Dioxide",f:"CO2",b:"C + O2"}, {n:"Carbon Monoxide",f:"CO",b:"C + O"},
+                {n:"Sulfur Dioxide",f:"SO2",b:"S + O2"}, {n:"Sulfur Trioxide",f:"SO3",b:"S + O3"},
+                {n:"Sulfur Hexafluoride",f:"SF6",b:"S + F6"}, {n:"Dinitrogen Monoxide",f:"N2O",b:"N2 + O"},
+                {n:"Dinitrogen Tetroxide",f:"N2O4",b:"N2 + O4"}, {n:"Nitrogen Trichloride",f:"NCl3",b:"N + Cl3"},
+                {n:"Phosphorus Pentachloride",f:"PCl5",b:"P + Cl5"}, {n:"Carbon Tetrachloride",f:"CCl4",b:"C + Cl4"},
+                {n:"Dihydrogen Monoxide",f:"H2O",b:"H2 + O"}, {n:"Silicon Dioxide",f:"SiO2",b:"Si + O2"},
+                {n:"Boron Trifluoride",f:"BF3",b:"B + F3"}, {n:"Diphosphorus Pentoxide",f:"P2O5",b:"P2 + O5"},
+                {n:"Xenon Tetrafluoride",f:"XeF4",b:"Xe + F4"}, {n:"Chlorine Trifluoride",f:"ClF3",b:"Cl + F3"}
+            ],
+            2: [
+                {n:"Sodium Chloride",f:"NaCl",b:"Na + Cl"}, {n:"Magnesium Oxide",f:"MgO",b:"Mg + O"},
+                {n:"Calcium Chloride",f:"CaCl2",b:"Ca + Cl2"}, {n:"Potassium Iodide",f:"KI",b:"K + I"},
+                {n:"Aluminum Oxide",f:"Al2O3",b:"Al2 + O3"}, {n:"Lithium Bromide",f:"LiBr",b:"Li + Br"},
+                {n:"Barium Sulfide",f:"BaS",b:"Ba + S"}, {n:"Sodium Fluoride",f:"NaF",b:"Na + F"},
+                {n:"Calcium Carbide",f:"CaC2",b:"Ca + C2"}, {n:"Aluminum Chloride",f:"AlCl3",b:"Al + Cl3"},
+                {n:"Zinc Sulfide",f:"ZnS",b:"Zn + S"}, {n:"Silver Chloride",f:"AgCl",b:"Ag + Cl"},
+                {n:"Zinc Oxide",f:"ZnO",b:"Zn + O"}, {n:"Potassium Bromide",f:"KBr",b:"K + Br"}
+            ],
+            3: [
+                {n:"Iron(III) Oxide",f:"Fe2O3",b:"Fe(+3) O(-2)"}, {n:"Iron(II) Chloride",f:"FeCl2",b:"Fe(+2) Cl(-1)"},
+                {n:"Copper(II) Sulfate",f:"CuSO4",b:"Cu(+2) SO4(-2)"}, {n:"Copper(I) Oxide",f:"Cu2O",b:"Cu(+1) O(-2)"},
+                {n:"Lead(IV) Oxide",f:"PbO2",b:"Pb(+4) O(-2)"}, {n:"Tin(II) Fluoride",f:"SnF2",b:"Sn(+2) F(-1)"},
+                {n:"Chromium(III) Oxide",f:"Cr2O3",b:"Cr(+3) O(-2)"}, {n:"Manganese(IV) Oxide",f:"MnO2",b:"Mn(+4) O(-2)"},
+                {n:"Mercury(II) Oxide",f:"HgO",b:"Hg(+2) O(-2)"}, {n:"Gold(III) Chloride",f:"AuCl3",b:"Au(+3) Cl(-1)"}
+            ],
+            4: [
+                {n:"Calcium Nitrate",f:"Ca(NO3)2",b:"Ca + NO3"}, {n:"Ammonium Sulfate",f:"(NH4)2SO4",b:"NH4 + SO4"},
+                {n:"Magnesium Hydroxide",f:"Mg(OH)2",b:"Mg + OH"}, {n:"Calcium Phosphate",f:"Ca3(PO4)2",b:"Ca + PO4"},
+                {n:"Sodium Carbonate",f:"Na2CO3",b:"Na + CO3"}, {n:"Sodium Bicarbonate",f:"NaHCO3",b:"Na + HCO3"},
+                {n:"Potassium Permanganate",f:"KMnO4",b:"K + MnO4"}, {n:"Ammonium Nitrate",f:"NH4NO3",b:"NH4 + NO3"},
+                {n:"Copper(II) Nitrate",f:"Cu(NO3)2",b:"Cu + NO3"}, {n:"Iron(III) Sulfate",f:"Fe2(SO4)3",b:"Fe + SO4"}
+            ]
+        };
+
+        const achievementsList = [
+            { id: 'first_win', title: 'Novice Chemist', desc: 'Complete Level 1', icon: 'flask-conical' },
+            { id: 'flawless', title: 'Lab Safety Expert', desc: 'Finish a level with 3 Hearts', icon: 'shield-check' },
+            { id: 'speedster', title: 'Reaction Time', desc: 'Finish in under 45 seconds', icon: 'zap' },
+            { id: 'master', title: 'Nobel Prize', desc: 'Complete Level 4', icon: 'award' }
+        ];
+
+        // --- STATE ---
+        let state = {
+            mode: 'normal', // normal (Name->Formula) or reverse (Formula->Name)
+            currentLevel: 1,
+            lives: 3,
+            queue: [],
+            index: 0,
+            timer: 0,
+            timerInt: null,
+            answered: false,
+            missed: JSON.parse(localStorage.getItem('chem_missed') || '[]')
+        };
+
+        // --- INIT ---
+        function init() {
+            lucide.createIcons();
+            updateMap();
+            loadAchievements();
+        }
+        
+        // --- MAP & MENU LOGIC ---
+        function updateMap() {
+            // Unlock logic: Need a best time on prev level to unlock next
+            let maxUnlocked = 1;
+            for(let i=1; i<=3; i++) {
+                if(localStorage.getItem(`chem_best_${i}`)) maxUnlocked = i + 1;
+            }
+
+            for(let i=1; i<=4; i++) {
+                const node = document.getElementById(`node-${i}`);
+                const best = localStorage.getItem(`chem_best_${i}`);
+                
+                // Score text
+                const scoreTxt = node.querySelector('.best-score');
+                scoreTxt.textContent = best ? `Best: ${formatTime(best)}` : 'Best: --:--';
+                if(best) scoreTxt.className = "text-xs text-emerald-600 font-bold mt-1 best-score";
+
+                // Lock state
+                if(i <= maxUnlocked) {
+                    node.classList.remove('locked');
+                    node.disabled = false;
+                    // Color the node number
+                    const numBadge = node.querySelector('div.rounded-full');
+                    if(i === 1) numBadge.className = "absolute -left-3 -top-3 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-md";
+                    if(i === 2) numBadge.className = "absolute -left-3 -top-3 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold shadow-md";
+                    if(i === 3) numBadge.className = "absolute -left-3 -top-3 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold shadow-md";
+                    if(i === 4) numBadge.className = "absolute -left-3 -top-3 w-8 h-8 bg-rose-500 rounded-full flex items-center justify-center text-white font-bold shadow-md";
+                } else {
+                    node.classList.add('locked');
+                    node.disabled = true;
+                }
+            }
+        }
+
+        function setMode(m) {
+            state.mode = m;
+            document.getElementById('mode-normal').className = m === 'normal' 
+                ? "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-slate-800 text-white shadow-md"
+                : "px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:bg-slate-50";
+            document.getElementById('mode-reverse').className = m === 'reverse'
+                ? "px-4 py-2 rounded-lg text-sm font-bold transition-all bg-slate-800 text-white shadow-md"
+                : "px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:bg-slate-50";
+            
+            document.getElementById('mode-desc').textContent = m === 'normal' 
+                ? "See the Name, type the Formula (e.g. CO2)" 
+                : "See the Formula, type the Name (e.g. Carbon Dioxide)";
+        }
+
+        // --- GAMEPLAY ---
+        function startGame(lvl) {
+            state.currentLevel = lvl;
+            state.lives = 3;
+            state.timer = 0;
+            state.index = 0;
+            state.answered = false;
+
+            // Spaced Repetition: Prioritize missed items from this level
+            const missedInLevel = state.missed.filter(m => levels[lvl].some(q => q.f === m));
+            const fresh = levels[lvl].filter(q => !missedInLevel.includes(q.f));
+            
+            // Build queue: 3 missed (if any) + 7 random fresh
+            const qMissed = [...new Set(missedInLevel)].slice(0, 3).map(f => levels[lvl].find(q => q.f === f));
+            const qFresh = fresh.sort(() => 0.5 - Math.random()).slice(0, 10 - qMissed.length);
+            state.queue = [...qMissed, ...qFresh].sort(() => 0.5 - Math.random());
+
+            // UI Trans
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-area').classList.remove('hidden');
+            document.getElementById('menu-controls').classList.add('hidden');
+            document.getElementById('game-stats').classList.remove('hidden');
+            document.getElementById('level-tag').textContent = `Level ${lvl}`;
+            
+            updateHearts();
+            startTimer();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = state.queue[state.index];
+            state.answered = false;
+            
+            // Text
+            const title = state.mode === 'normal' ? q.n : formatFormula(q.f);
+            const sub = state.mode === 'normal' ? "Type the chemical formula" : "Type the name";
+            document.getElementById('question-main').innerHTML = title;
+            document.getElementById('question-sub').textContent = sub;
+
+            // Input
+            const inp = document.getElementById('answer-input');
+            inp.value = '';
+            inp.disabled = false;
+            inp.focus();
+            inp.placeholder = state.mode === 'normal' ? "e.g. CO2" : "e.g. Carbon Dioxide";
+
+            // Reset UI
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('feedback-panel').classList.add('hidden');
+            
+            // Progress
+            document.getElementById('progress-bar').style.width = `${(state.index / state.queue.length) * 100}%`;
+        }
+
+        function checkAnswer() {
+            if(state.answered) return;
+            
+            const inp = document.getElementById('answer-input');
+            const userVal = inp.value.trim().toLowerCase().replace(/\s/g, ''); // aggressive normalization
+            const q = state.queue[state.index];
+            
+            // Check logic based on mode
+            let correct = false;
+            if(state.mode === 'normal') {
+                correct = userVal === q.f.toLowerCase();
+            } else {
+                // Remove spaces and special chars for name check too
+                const targetName = q.n.toLowerCase().replace(/[^a-z]/g, ''); 
+                const inputName = userVal.replace(/[^a-z]/g, '');
+                correct = targetName === inputName;
+            }
+
+            state.answered = true;
+            inp.disabled = true;
+            document.getElementById('submit-btn').classList.add('hidden');
+            document.getElementById('feedback-panel').classList.remove('hidden');
+
+            const fbTitle = document.getElementById('feedback-title');
+            const fbContent = document.getElementById('feedback-content');
+            const panel = document.getElementById('feedback-panel');
+
+            // Calculate Mass
+            const mass = calculateMolarMass(q.f);
+            document.getElementById('mass-display').textContent = mass ? `${mass.toFixed(2)} g/mol` : 'N/A';
+            document.getElementById('structure-display').textContent = q.b;
+
+            if(correct) {
+                fbTitle.textContent = "Correct!";
+                fbTitle.className = "text-lg font-bold text-emerald-600";
+                fbContent.innerHTML = `Solution: <span class="font-bold">${formatFormula(q.f)}</span> is ${q.n}`;
+                panel.className = "mt-6 bg-emerald-50 rounded-2xl p-5 border border-emerald-200 fade-in";
+                confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                
+                // Remove from missed if it was there
+                state.missed = state.missed.filter(m => m !== q.f);
+                localStorage.setItem('chem_missed', JSON.stringify(state.missed));
+            } else {
+                state.lives--;
+                updateHearts();
+                
+                fbTitle.textContent = "Incorrect";
+                fbTitle.className = "text-lg font-bold text-rose-600";
+                fbContent.innerHTML = `Correct Answer: <span class="font-bold">${state.mode === 'normal' ? formatFormula(q.f) : q.n}</span>`;
+                panel.className = "mt-6 bg-rose-50 rounded-2xl p-5 border border-rose-200 fade-in shake";
+
+                // Add to missed
+                if(!state.missed.includes(q.f)) {
+                    state.missed.push(q.f);
+                    localStorage.setItem('chem_missed', JSON.stringify(state.missed));
+                }
+
+                if(state.lives <= 0) {
+                    setTimeout(gameOver, 1500);
+                }
+            }
+        }
+
+        function nextQuestion() {
+            if(state.lives <= 0) return;
+            state.index++;
+            if(state.index < state.queue.length) {
+                loadQuestion();
+            } else {
+                levelComplete();
+            }
+        }
+
+        // --- HELPERS ---
+        function updateHearts() {
+            const container = document.getElementById('hearts-container');
+            container.innerHTML = '';
+            for(let i=0; i<3; i++) {
+                const icon = document.createElement('i');
+                // Creating lucid icon manually or using placeholders
+                // Using SVG string for immediate render without lucide.createIcons re-run lag
+                if(i < state.lives) {
+                    icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart w-6 h-6"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+                } else {
+                    icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart-crack w-6 h-6"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="m12 13-1-1 2-2-3-3"/></svg>`;
+                }
+                container.appendChild(icon);
+            }
+        }
+
+        function calculateMolarMass(formula) {
+            // Very basic parser for CO2, Fe2(SO4)3 etc
+            // Expand polyatomics first: Fe2(SO4)3 -> Fe2 S3 O12
+            // This regex approach is simplified for the specific library format
+            try {
+                let expanded = formula;
+                // Handle brackets (NH4)2 -> N2H8. Limited to single depth
+                expanded = expanded.replace(/\(([A-Za-z0-9]+)\)(\d+)/g, (_, inner, mul) => {
+                    let res = "";
+                    const regex = /([A-Z][a-z]*)(\d*)/g;
+                    let match;
+                    while ((match = regex.exec(inner)) !== null) {
+                        const el = match[1];
+                        const count = (parseInt(match[2]) || 1) * parseInt(mul);
+                        res += el + count;
+                    }
+                    return res;
+                });
+
+                let mass = 0;
+                const regex = /([A-Z][a-z]*)(\d*)/g;
+                let match;
+                while ((match = regex.exec(expanded)) !== null) {
+                    if(!match[0]) continue; // avoid infinite loop on empty
+                    const el = match[1];
+                    const count = parseInt(match[2]) || 1;
+                    if(atomicWeights[el]) mass += atomicWeights[el] * count;
+                }
+                return mass;
+            } catch(e) { return 0; }
+        }
+
+        function speakName() {
+            const q = state.queue[state.index];
+            const u = new SpeechSynthesisUtterance(q.n);
+            u.rate = 0.9;
+            window.speechSynthesis.speak(u);
+        }
+
+        function formatFormula(f) {
+            return f.replace(/(\d+)/g, '<sub>$1</sub>');
+        }
+
+        function formatTime(ms) {
+            const s = Math.floor(ms / 1000);
+            return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+        }
+
+        // --- TIMER & END GAME ---
+        function startTimer() {
+            clearInterval(state.timerInt);
+            state.timerInt = setInterval(() => {
+                state.timer += 1000;
+                document.getElementById('timer-display').textContent = formatTime(state.timer);
+            }, 1000);
+        }
+
+        function levelComplete() {
+            clearInterval(state.timerInt);
+            
+            // Check Best Time
+            const lvl = state.currentLevel;
+            const prev = localStorage.getItem(`chem_best_${lvl}`);
+            if(!prev || state.timer < parseInt(prev)) {
+                localStorage.setItem(`chem_best_${lvl}`, state.timer);
+            }
+
+            // Achievements
+            unlockAchievement('first_win');
+            if(state.lives === 3) unlockAchievement('flawless');
+            if(state.timer < 45000) unlockAchievement('speedster');
+            if(lvl === 4) unlockAchievement('master');
+
+            document.getElementById('game-card').innerHTML = `
+                <div class="p-8 text-center fade-in">
+                    <div class="inline-block p-4 bg-indigo-100 rounded-full text-indigo-600 mb-4">
+                        <i data-lucide="trophy" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Sector Clear!</h2>
+                    <p class="text-slate-500 mb-6">You've mastered these compounds.</p>
+                    
+                    <div class="text-4xl font-mono font-bold text-slate-800 mb-8">${formatTime(state.timer)}</div>
+                    
+                    <button onclick="goToMenu()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-all">
+                        Return to Map
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+            confetti({ particleCount: 150, spread: 100 });
+        }
+
+        function gameOver() {
+            clearInterval(state.timerInt);
+            document.getElementById('game-card').innerHTML = `
+                <div class="p-8 text-center fade-in">
+                    <div class="inline-block p-4 bg-rose-100 rounded-full text-rose-600 mb-4">
+                        <i data-lucide="skull" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-2">Experiment Failed</h2>
+                    <p class="text-slate-500 mb-6">Too many incorrect attempts.</p>
+                    
+                    <button onclick="startGame(${state.currentLevel})" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-indigo-700 mb-3">
+                        Try Again
+                    </button>
+                    <button onclick="goToMenu()" class="w-full bg-white text-slate-700 border border-slate-200 font-bold py-4 rounded-xl hover:bg-slate-50">
+                        Exit
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function goToMenu() {
+            clearInterval(state.timerInt);
+            document.getElementById('game-area').classList.add('hidden');
+            document.getElementById('menu-screen').classList.remove('hidden');
+            document.getElementById('menu-controls').classList.remove('hidden');
+            document.getElementById('game-stats').classList.add('hidden');
+            updateMap();
+        }
+
+        // --- ACHIEVEMENTS ---
+        function loadAchievements() {
+            const unlocked = JSON.parse(localStorage.getItem('chem_achievements') || '[]');
+            const list = document.getElementById('achievements-list');
+            list.innerHTML = '';
+            
+            // Badge
+            if(unlocked.length > 0) {
+                document.getElementById('achievement-badge').classList.remove('hidden');
+            }
+
+            achievementsList.forEach(a => {
+                const isUnlocked = unlocked.includes(a.id);
+                list.innerHTML += `
+                    <div class="flex items-center gap-4 p-4 rounded-2xl border ${isUnlocked ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-100 opacity-60'}">
+                        <div class="p-3 rounded-full ${isUnlocked ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-400'}">
+                            <i data-lucide="${a.icon}" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900">${a.title}</h4>
+                            <p class="text-xs text-slate-500">${a.desc}</p>
+                        </div>
+                        ${isUnlocked ? '<i data-lucide="check-circle" class="w-5 h-5 text-amber-500 ml-auto"></i>' : ''}
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+        function unlockAchievement(id) {
+            const unlocked = JSON.parse(localStorage.getItem('chem_achievements') || '[]');
+            if(!unlocked.includes(id)) {
+                unlocked.push(id);
+                localStorage.setItem('chem_achievements', JSON.stringify(unlocked));
+                // Show toast notification could go here
+            }
+        }
+
+        function toggleAchievements() {
+            const modal = document.getElementById('achievements-modal');
+            if(modal.classList.contains('hidden')) {
+                loadAchievements();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function toggleSettings() {
+            // Placeholder for Zubi code logic or advanced settings
+            // Just an alert for now or secret code input in future
+            const code = prompt("Enter Access Code (Optional):");
+            if(code === "76") alert("Calculator Tool Unlocked (Coming Soon)");
+        }
+
+        // Init
+        window.onload = init;
+        document.getElementById('answer-input').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') checkAnswer();
+        });
+
+    </script>
+</body>
+</html>
+
+
