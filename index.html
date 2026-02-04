@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nomenclature Lab: Speed Run</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .chem-font { font-family: 'JetBrains Mono', monospace; }
+        .sub { vertical-align: sub; font-size: 0.6em; }
+        .glossary-scroll::-webkit-scrollbar { width: 6px; }
+        .glossary-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .glossary-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+        /* Hide number input spinners */
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="text-slate-800 h-screen overflow-hidden flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 shadow-sm z-20 shrink-0">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="goToMenu()">
+                <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+                    <i data-lucide="flask-conical" class="w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight hidden sm:block">Nomenclature<span class="text-indigo-600">Lab</span></h1>
+            </div>
+            
+            <div id="game-header-stats" class="hidden flex items-center gap-4 sm:gap-6">
+                <div class="flex flex-col items-end">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Time</span>
+                    <span class="text-xl font-mono font-bold text-slate-800" id="timer-display">00:00</span>
+                </div>
+                <div class="flex flex-col items-end text-rose-500" id="penalty-box" style="visibility: hidden;">
+                    <span class="text-[10px] font-bold uppercase tracking-wider">Penalty</span>
+                    <span class="text-sm font-bold">+30s</span>
+                </div>
+                <button onclick="toggleGlossary()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors lg:hidden">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 flex overflow-hidden relative">
+        
+        <!-- MENU SCREEN -->
+        <div id="menu-screen" class="absolute inset-0 bg-slate-50 z-30 overflow-y-auto p-4 flex flex-col items-center justify-center">
+            <div class="max-w-4xl w-full">
+                <div class="text-center mb-10">
+                    <h2 class="text-4xl font-extrabold text-slate-900 mb-3">Select Proficiency Level</h2>
+                    <p class="text-slate-500 text-lg">Master chemical naming from simple gases to complex polyatomic ions.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Level 1 -->
+                    <button onclick="startGame(1)" class="group relative bg-white p-6 rounded-2xl shadow-sm border-2 border-slate-200 hover:border-indigo-500 hover:shadow-md transition-all text-left">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                <i data-lucide="wind" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded best-time" data-level="1">--:--</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-1">Level 1: Covalent Gases</h3>
+                        <p class="text-sm text-slate-500 mb-4">Non-metal + Non-metal. Use prefixes like mono, di, tri.</p>
+                        <div class="flex gap-2 text-xs font-mono text-slate-400">
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">CO2</span>
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">N2O4</span>
+                        </div>
+                    </button>
+
+                    <!-- Level 2 -->
+                    <button onclick="startGame(2)" class="group relative bg-white p-6 rounded-2xl shadow-sm border-2 border-slate-200 hover:border-emerald-500 hover:shadow-md transition-all text-left">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                <i data-lucide="zap" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded best-time" data-level="2">--:--</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-1">Level 2: Ionic Basics</h3>
+                        <p class="text-sm text-slate-500 mb-4">Metal + Non-metal. Balance charges. No prefixes.</p>
+                        <div class="flex gap-2 text-xs font-mono text-slate-400">
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">NaCl</span>
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">MgO</span>
+                        </div>
+                    </button>
+
+                    <!-- Level 3 -->
+                    <button onclick="startGame(3)" class="group relative bg-white p-6 rounded-2xl shadow-sm border-2 border-slate-200 hover:border-amber-500 hover:shadow-md transition-all text-left">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-amber-50 text-amber-600 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                <i data-lucide="settings-2" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded best-time" data-level="3">--:--</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-1">Level 3: Transition Metals</h3>
+                        <p class="text-sm text-slate-500 mb-4">Variable charges. Requires Roman Numerals (e.g., Iron(III)).</p>
+                        <div class="flex gap-2 text-xs font-mono text-slate-400">
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">FeCl3</span>
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">Cu2O</span>
+                        </div>
+                    </button>
+
+                    <!-- Level 4 -->
+                    <button onclick="startGame(4)" class="group relative bg-white p-6 rounded-2xl shadow-sm border-2 border-slate-200 hover:border-rose-500 hover:shadow-md transition-all text-left">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="p-3 bg-rose-50 text-rose-600 rounded-xl group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                                <i data-lucide="brackets" class="w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded best-time" data-level="4">--:--</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-1">Level 4: Polyatomic Ions</h3>
+                        <p class="text-sm text-slate-500 mb-4">Complex ions requiring brackets. The boss level.</p>
+                        <div class="flex gap-2 text-xs font-mono text-slate-400">
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">Ca(NO3)2</span>
+                            <span class="bg-slate-100 px-1.5 py-0.5 rounded">NH4OH</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME AREA -->
+        <div id="game-area" class="flex-1 flex relative hidden">
+            
+            <!-- Quiz Column -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-8 flex flex-col items-center justify-center bg-slate-50 relative">
+                
+                <!-- Card -->
+                <div class="w-full max-w-xl z-10 relative">
+                    <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden fade-in" id="game-card">
+                        
+                        <!-- Progress -->
+                        <div class="h-1.5 bg-slate-100 w-full">
+                            <div class="h-full bg-indigo-500 transition-all duration-300" style="width: 0%" id="progress-bar"></div>
+                        </div>
+
+                        <div class="p-6 sm:p-8">
+                            <div class="mb-6 text-center">
+                                <div id="level-badge" class="inline-block px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-wider rounded-full mb-4">Level 1</div>
+                                <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-2 leading-tight" id="question-text">...</h2>
+                            </div>
+
+                            <!-- Input -->
+                            <div class="space-y-4">
+                                <input type="text" id="answer-input" 
+                                    class="w-full bg-slate-50 border-2 border-slate-200 text-slate-900 text-center text-3xl font-bold rounded-xl p-4 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all chem-font placeholder-slate-300 uppercase tracking-widest"
+                                    placeholder="FORMULA" autocomplete="off">
+                                
+                                <div class="flex gap-3">
+                                    <button onclick="useHint()" id="hint-btn" class="flex-none w-16 bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold rounded-xl border border-amber-200 transition-colors flex items-center justify-center flex-col text-[10px] leading-tight py-2" title="+30s Penalty">
+                                        <i data-lucide="lightbulb" class="w-5 h-5 mb-0.5"></i>
+                                        +30s
+                                    </button>
+                                    <button onclick="checkAnswer()" id="submit-btn" 
+                                        class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2 text-lg">
+                                        Check
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Hint Display -->
+                            <div id="hint-area" class="mt-4 hidden p-3 bg-amber-50 border border-amber-100 rounded-lg text-sm text-amber-800 flex items-start gap-2 fade-in">
+                                <i data-lucide="info" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                                <span id="hint-text"></span>
+                            </div>
+
+                            <!-- Feedback -->
+                            <div id="feedback-area" class="mt-6 hidden rounded-xl p-5 border-l-4 shadow-sm fade-in">
+                                <h3 class="font-bold text-xl mb-1" id="feedback-title"></h3>
+                                <p class="text-slate-700 text-lg mb-3" id="feedback-message"></p>
+                                <div class="p-3 bg-white/60 rounded-lg text-sm text-slate-800 border border-slate-200/50 font-mono" id="feedback-breakdown"></div>
+                                <div id="fun-fact" class="mt-3 text-sm text-indigo-800 bg-indigo-50 p-3 rounded-lg border border-indigo-100 hidden"></div>
+                                <button onclick="nextQuestion()" id="next-btn" class="mt-5 w-full bg-slate-900 text-white font-bold py-3 rounded-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+                                    Next <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 flex justify-between items-center text-xs font-medium text-slate-400">
+                            <span id="question-counter">1/10</span>
+                            <span id="current-mode-text">Speed Run</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Glossary Sidebar -->
+            <aside id="glossary-panel" class="fixed inset-y-0 right-0 w-full lg:w-[450px] bg-white border-l border-slate-200 shadow-2xl transform translate-x-full lg:translate-x-0 lg:relative lg:shadow-none transition-transform duration-300 z-40 flex flex-col">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h2 class="font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="book" class="w-5 h-5 text-indigo-600"></i>
+                        Reference Guide
+                    </h2>
+                    <button onclick="toggleGlossary()" class="lg:hidden p-2 text-slate-400">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-5 space-y-8 glossary-scroll">
+                    
+                    <!-- Rule: Naming Order -->
+                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                        <h3 class="font-bold text-slate-800 mb-2 text-sm uppercase flex items-center gap-2">
+                            <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                            Why is the order this way?
+                        </h3>
+                        <p class="text-sm text-slate-600 mb-2">We list the <strong>least electronegative</strong> element first (the one that acts like the metal/cation). This is usually the element further to the <strong>LEFT</strong> on the Periodic Table.</p>
+                        <div class="flex items-center gap-2 text-xs font-mono bg-white p-2 rounded border border-slate-200">
+                            <span class="text-indigo-600 font-bold">Carbon</span> (Left) <i data-lucide="arrow-right" class="w-3 h-3"></i> <span class="text-rose-600 font-bold">Oxygen</span> (Right) = CO2
+                        </div>
+                    </div>
+
+                    <!-- Level 1 Helper -->
+                    <div id="help-level-1" class="glossary-section">
+                        <h3 class="font-bold text-indigo-600 mb-3 text-xs uppercase tracking-widest border-b border-indigo-100 pb-2">Level 1: Covalent Prefixes</h3>
+                        <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                            <div class="flex justify-between px-2 py-1 bg-indigo-50 rounded"><span>Mono-</span> <b>1</b></div>
+                            <div class="flex justify-between px-2 py-1 bg-indigo-50 rounded"><span>Di-</span> <b>2</b></div>
+                            <div class="flex justify-between px-2 py-1 bg-indigo-50 rounded"><span>Tri-</span> <b>3</b></div>
+                            <div class="flex justify-between px-2 py-1 bg-indigo-50 rounded"><span>Tetra-</span> <b>4</b></div>
+                            <div class="flex justify-between px-2 py-1 bg-indigo-50 rounded"><span>Penta-</span> <b>5</b></div>
+                            <div class="flex justify-between px-2 py-1 bg-indigo-50 rounded"><span>Hexa-</span> <b>6</b></div>
+                        </div>
+                        <p class="text-xs text-indigo-800">Rule: Never use "Mono" on the first element.</p>
+                    </div>
+
+                    <!-- Level 3 Helper -->
+                    <div id="help-level-3" class="glossary-section">
+                        <h3 class="font-bold text-amber-600 mb-3 text-xs uppercase tracking-widest border-b border-amber-100 pb-2">Level 3: Roman Numerals</h3>
+                        <p class="text-sm text-slate-600 mb-3">Transition metals can have different charges. The Roman numeral tells you the <strong>positive charge</strong> of the metal.</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between items-center p-2 bg-amber-50 rounded border border-amber-100">
+                                <span>Iron(II)</span> <span class="font-mono font-bold">Fe²⁺</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-amber-50 rounded border border-amber-100">
+                                <span>Iron(III)</span> <span class="font-mono font-bold">Fe³⁺</span>
+                            </div>
+                            <div class="flex justify-between items-center p-2 bg-amber-50 rounded border border-amber-100">
+                                <span>Copper(I)</span> <span class="font-mono font-bold">Cu⁺</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Level 4 Helper -->
+                    <div id="help-level-4" class="glossary-section">
+                        <h3 class="font-bold text-rose-600 mb-3 text-xs uppercase tracking-widest border-b border-rose-100 pb-2">Level 4: Polyatomic Ions</h3>
+                        <p class="text-sm text-slate-600 mb-3">Groups of atoms acting as one unit. If you need more than one group to balance the charge, <strong>use brackets ( )</strong>.</p>
+                        <table class="w-full text-sm text-left border-collapse">
+                            <thead class="text-xs text-rose-700 uppercase bg-rose-50">
+                                <tr><th class="p-2">Name</th><th class="p-2">Formula</th><th class="p-2">Charge</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <tr><td class="p-2">Nitrate</td><td class="p-2 font-mono">NO3</td><td class="p-2 text-rose-600">-1</td></tr>
+                                <tr><td class="p-2">Sulfate</td><td class="p-2 font-mono">SO4</td><td class="p-2 text-rose-600">-2</td></tr>
+                                <tr><td class="p-2">Carbonate</td><td class="p-2 font-mono">CO3</td><td class="p-2 text-rose-600">-2</td></tr>
+                                <tr><td class="p-2">Hydroxide</td><td class="p-2 font-mono">OH</td><td class="p-2 text-rose-600">-1</td></tr>
+                                <tr><td class="p-2">Phosphate</td><td class="p-2 font-mono">PO4</td><td class="p-2 text-rose-600">-3</td></tr>
+                                <tr><td class="p-2">Ammonium</td><td class="p-2 font-mono">NH4</td><td class="p-2 text-emerald-600">+1</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Charges Reference (Levels 2-4) -->
+                    <div class="bg-white rounded-xl p-4 border border-slate-200">
+                        <h3 class="font-bold text-emerald-600 mb-3 text-xs uppercase tracking-widest border-b border-emerald-50 pb-2">Common Charges</h3>
+                        <div class="grid grid-cols-3 gap-2 text-xs font-mono text-center">
+                            <div class="bg-emerald-50 p-2 rounded">Group 1<br><span class="text-lg font-bold">+1</span></div>
+                            <div class="bg-emerald-50 p-2 rounded">Group 2<br><span class="text-lg font-bold">+2</span></div>
+                            <div class="bg-emerald-50 p-2 rounded">Group 13<br><span class="text-lg font-bold">+3</span></div>
+                            <div class="bg-rose-50 p-2 rounded">Group 15<br><span class="text-lg font-bold">-3</span></div>
+                            <div class="bg-rose-50 p-2 rounded">Group 16<br><span class="text-lg font-bold">-2</span></div>
+                            <div class="bg-rose-50 p-2 rounded">Group 17<br><span class="text-lg font-bold">-1</span></div>
+                        </div>
+                    </div>
+
+                </div>
+            </aside>
+            <div id="glossary-overlay" onclick="toggleGlossary()" class="fixed inset-0 bg-slate-900/50 z-30 hidden lg:hidden backdrop-blur-sm"></div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- DATA LIBRARY (120+ Compounds) ---
+        
+        // Level 1: Binary Covalent (Prefixes)
+        const level1 = [
+            {n:"Carbon Dioxide",f:"CO2",b:"Carbon(1) + Di(2) Oxide",fact:"Used in fire extinguishers and carbonated drinks."},
+            {n:"Carbon Monoxide",f:"CO",b:"Carbon(1) + Mono(1) Oxide",fact:"Generated by incomplete combustion. Very toxic."},
+            {n:"Sulfur Dioxide",f:"SO2",b:"Sulfur(1) + Di(2) Oxide",fact:"Volcanic gas, smells like burnt matches."},
+            {n:"Sulfur Trioxide",f:"SO3",b:"Sulfur(1) + Tri(3) Oxide",fact:"Combines with water to make sulfuric acid."},
+            {n:"Sulfur Hexafluoride",f:"SF6",b:"Sulfur(1) + Hexa(6) Fluoride",fact:"A dense gas that makes your voice sound deep."},
+            {n:"Dinitrogen Monoxide",f:"N2O",b:"Di(2) Nitrogen + Mono(1) Oxide",fact:"Known as 'Laughing Gas' in dentistry."},
+            {n:"Dinitrogen Tetroxide",f:"N2O4",b:"Di(2) Nitrogen + Tetra(4) Oxide",fact:"Rocket propellant."},
+            {n:"Nitrogen Trichloride",f:"NCl3",b:"Nitrogen(1) + Tri(3) Chloride",fact:"Explosive yellow liquid."},
+            {n:"Phosphorus Pentachloride",f:"PCl5",b:"Phosphorus(1) + Penta(5) Chloride",fact:"Reagent in organic chemistry."},
+            {n:"Carbon Tetrachloride",f:"CCl4",b:"Carbon(1) + Tetra(4) Chloride",fact:"Old cleaning fluid, now banned."},
+            {n:"Dihydrogen Monoxide",f:"H2O",b:"Di(2) Hydrogen + Mono(1) Oxide",fact:"Scientific joke name for Water!"},
+            {n:"Silicon Dioxide",f:"SiO2",b:"Silicon(1) + Di(2) Oxide",fact:"Found in nature as Quartz and Sand."},
+            {n:"Boron Trifluoride",f:"BF3",b:"Boron(1) + Tri(3) Fluoride",fact:"Strong Lewis acid."},
+            {n:"Diphosphorus Pentoxide",f:"P2O5",b:"Di(2) Phosphorus + Penta(5) Oxide",fact:"Powerful drying agent."},
+            {n:"Xenon Tetrafluoride",f:"XeF4",b:"Xenon(1) + Tetra(4) Fluoride",fact:"One of the first Noble Gas compounds."},
+            {n:"Chlorine Trifluoride",f:"ClF3",b:"Chlorine(1) + Tri(3) Fluoride",fact:"Extremely reactive, burns asbestos."},
+            {n:"Iodine Heptafluoride",f:"IF7",b:"Iodine(1) + Hepta(7) Fluoride",fact:"Interhalogen compound."},
+            {n:"Disulfur Dichloride",f:"S2Cl2",b:"Di(2) Sulfur + Di(2) Chloride",fact:"Used to vulcanize rubber."},
+            {n:"Tetraphosphorus Trisulfide",f:"P4S3",b:"Tetra(4) Phosphorus + Tri(3) Sulfide",fact:"Used in strike-anywhere matches."},
+            {n:"Nitrogen Monoxide",f:"NO",b:"Nitrogen(1) + Mono(1) Oxide",fact:"Important signaling molecule in the body."},
+            {n:"Dichlorine Heptoxide",f:"Cl2O7",b:"Di(2) Chlorine + Hepta(7) Oxide",fact:"Anhydride of perchloric acid."},
+            {n:"Oxygen Difluoride",f:"OF2",b:"Oxygen(1) + Di(2) Fluoride",fact:"Rare compound where Oxygen is +2."},
+            {n:"Krypton Difluoride",f:"KrF2",b:"Krypton(1) + Di(2) Fluoride",fact:"Volatile solid noble gas compound."},
+            {n:"Selenium Hexafluoride",f:"SeF6",b:"Selenium(1) + Hexa(6) Fluoride",fact:"Electric insulator gas."},
+            {n:"Tellurium Dioxide",f:"TeO2",b:"Tellurium(1) + Di(2) Oxide",fact:"Used in acousto-optic devices."},
+            {n:"Arsenic Trichloride",f:"AsCl3",b:"Arsenic(1) + Tri(3) Chloride",fact:"Precursor to organoarsenic compounds."},
+            {n:"Germanium Tetrachloride",f:"GeCl4",b:"Germanium(1) + Tetra(4) Chloride",fact:"Used in fiber optic production."},
+            {n:"Dibromine Pentoxide",f:"Br2O5",b:"Di(2) Bromine + Penta(5) Oxide",fact:"Unstable halogen oxide."},
+            {n:"Iodine Monochloride",f:"ICl",b:"Iodine(1) + Mono(1) Chloride",fact:"Red-brown liquid."},
+            {n:"Phosphorus Triiodide",f:"PI3",b:"Phosphorus(1) + Tri(3) Iodide",fact:"Red solid, used in organic synthesis."}
+        ];
+
+        // Level 2: Binary Ionic (Type I - Fixed Charge)
+        const level2 = [
+            {n:"Sodium Chloride",f:"NaCl",b:"Na(+1) + Cl(-1)",fact:"Table salt."},
+            {n:"Magnesium Oxide",f:"MgO",b:"Mg(+2) + O(-2)",fact:"Used in antacids and libraries to preserve books."},
+            {n:"Calcium Chloride",f:"CaCl2",b:"Ca(+2) + Cl(-1) + Cl(-1)",fact:"Road salt, melts ice."},
+            {n:"Potassium Iodide",f:"KI",b:"K(+1) + I(-1)",fact:"Added to salt to prevent iodine deficiency."},
+            {n:"Aluminum Oxide",f:"Al2O3",b:"2 Al(+3) + 3 O(-2)",fact:"Corundum, rubies, and sapphires."},
+            {n:"Lithium Bromide",f:"LiBr",b:"Li(+1) + Br(-1)",fact:"Used in air conditioning systems."},
+            {n:"Barium Sulfide",f:"BaS",b:"Ba(+2) + S(-2)",fact:"Luminous paint component."},
+            {n:"Sodium Fluoride",f:"NaF",b:"Na(+1) + F(-1)",fact:"Added to toothpaste."},
+            {n:"Calcium Carbide",f:"CaC2",b:"Ca(+2) + C(-1)",fact:"Produces acetylene gas with water."},
+            {n:"Aluminum Chloride",f:"AlCl3",b:"Al(+3) + 3 Cl(-1)",fact:"Antiperspirant ingredient."},
+            {n:"Strontium Oxide",f:"SrO",b:"Sr(+2) + O(-2)",fact:"Used in old CRT TV glass."},
+            {n:"Zinc Sulfide",f:"ZnS",b:"Zn(+2) + S(-2)",fact:"Glows in the dark (phosphorescent)."},
+            {n:"Silver Chloride",f:"AgCl",b:"Ag(+1) + Cl(-1)",fact:"Used in photochromic lenses."},
+            {n:"Zinc Oxide",f:"ZnO",b:"Zn(+2) + O(-2)",fact:"Sunscreen component."},
+            {n:"Cadmium Sulfide",f:"CdS",b:"Cd(+2) + S(-2)",fact:"Yellow pigment."},
+            {n:"Sodium Nitride",f:"Na3N",b:"3 Na(+1) + N(-3)",fact:"Unstable alkali metal nitride."},
+            {n:"Calcium Phosphide",f:"Ca3P2",b:"3 Ca(+2) + 2 P(-3)",fact:"Used in fireworks and rodenticides."},
+            {n:"Potassium Sulfide",f:"K2S",b:"2 K(+1) + S(-2)",fact:"Formed when gunpowder burns."},
+            {n:"Rubidium Oxide",f:"Rb2O",b:"2 Rb(+1) + O(-2)",fact:"Reacts violently with water."},
+            {n:"Cesium Chloride",f:"CsCl",b:"Cs(+1) + Cl(-1)",fact:"Used in centrifuges for DNA separation."},
+            {n:"Magnesium Nitride",f:"Mg3N2",b:"3 Mg(+2) + 2 N(-3)",fact:"Catalyst for synthetic diamond."},
+            {n:"Aluminum Nitride",f:"AlN",b:"Al(+3) + N(-3)",fact:"High thermal conductivity ceramic."},
+            {n:"Gallium Arsenide",f:"GaAs",b:"Ga(+3) + As(-3)",fact:"Semiconductor used in solar cells."},
+            {n:"Indium Phosphide",f:"InP",b:"In(+3) + P(-3)",fact:"High-frequency electronics."},
+            {n:"Beryllium Oxide",f:"BeO",b:"Be(+2) + O(-2)",fact:"Excellent electrical insulator."},
+            {n:"Lithium Oxide",f:"Li2O",b:"2 Li(+1) + O(-2)",fact:"Used in ceramic glazes."},
+            {n:"Barium Chloride",f:"BaCl2",b:"Ba(+2) + 2 Cl(-1)",fact:"Used to test for sulfates."},
+            {n:"Strontium Chloride",f:"SrCl2",b:"Sr(+2) + 2 Cl(-1)",fact:"Red color in fireworks."},
+            {n:"Calcium Fluoride",f:"CaF2",b:"Ca(+2) + 2 F(-1)",fact:"Mineral known as Fluorite."},
+            {n:"Potassium Bromide",f:"KBr",b:"K(+1) + Br(-1)",fact:"Historical sedative."}
+        ];
+
+        // Level 3: Transition Metals (Type II - Roman Numerals)
+        const level3 = [
+            {n:"Iron(III) Oxide",f:"Fe2O3",b:"Fe(+3) balances O(-2) -> Swap charges",fact:"Rust."},
+            {n:"Iron(II) Chloride",f:"FeCl2",b:"Fe(+2) needs 2 Cl(-1)",fact:"Green crystals."},
+            {n:"Copper(II) Sulfate",f:"CuSO4",b:"Cu(+2) balances Sulfate(-2)",fact:"Blue crystals, root killer."}, // Borderline polyatomic but common name
+            {n:"Copper(I) Oxide",f:"Cu2O",b:"2 Cu(+1) need 1 O(-2)",fact:"Red pigment in glass."},
+            {n:"Lead(IV) Oxide",f:"PbO2",b:"Pb(+4) needs 2 O(-2)",fact:"Found in lead-acid batteries."},
+            {n:"Lead(II) Nitrate",f:"Pb(NO3)2",b:"Pb(+2) with Nitrate",fact:"Used in explosives."},
+            {n:"Tin(II) Fluoride",f:"SnF2",b:"Sn(+2) needs 2 F(-1)",fact:"Ingredient in toothpaste (Stannous Fluoride)."},
+            {n:"Tin(IV) Chloride",f:"SnCl4",b:"Sn(+4) needs 4 Cl(-1)",fact:"Chemical weapon in WWI."},
+            {n:"Chromium(III) Oxide",f:"Cr2O3",b:"Cr(+3) balances O(-2)",fact:"Green pigment."},
+            {n:"Manganese(IV) Oxide",f:"MnO2",b:"Mn(+4) balances 2 O(-2)",fact:"Black powder in dry cell batteries."},
+            {n:"Mercury(II) Oxide",f:"HgO",b:"Hg(+2) balances O(-2)",fact:"Orange solid."},
+            {n:"Cobalt(II) Chloride",f:"CoCl2",b:"Co(+2) needs 2 Cl(-1)",fact:"Turns pink when wet, blue when dry."},
+            {n:"Nickel(II) Oxide",f:"NiO",b:"Ni(+2) balances O(-2)",fact:"Green powder."},
+            {n:"Gold(III) Chloride",f:"AuCl3",b:"Au(+3) needs 3 Cl(-1)",fact:"Red crystals."},
+            {n:"Titanium(IV) Oxide",f:"TiO2",b:"Ti(+4) needs 2 O(-2)",fact:"Bright white pigment in paint."},
+            {n:"Vanadium(V) Oxide",f:"V2O5",b:"V(+5) balances O(-2)",fact:"Catalyst for sulfuric acid."},
+            {n:"Platinum(IV) Chloride",f:"PtCl4",b:"Pt(+4) needs 4 Cl(-1)",fact:"Brown powder."},
+            {n:"Manganese(II) Chloride",f:"MnCl2",b:"Mn(+2) needs 2 Cl(-1)",fact:"Pink solid."},
+            {n:"Chromium(II) Chloride",f:"CrCl2",b:"Cr(+2) needs 2 Cl(-1)",fact:"Strong reducing agent."},
+            {n:"Iron(III) Chloride",f:"FeCl3",b:"Fe(+3) needs 3 Cl(-1)",fact:"Used to etch circuit boards."},
+            {n:"Cobalt(III) Fluoride",f:"CoF3",b:"Co(+3) needs 3 F(-1)",fact:"Powerful fluorinating agent."},
+            {n:"Copper(II) Chloride",f:"CuCl2",b:"Cu(+2) needs 2 Cl(-1)",fact:"Green flame test."},
+            {n:"Lead(II) Iodide",f:"PbI2",b:"Pb(+2) needs 2 I(-1)",fact:"Golden rain precipitate."},
+            {n:"Mercury(I) Chloride",f:"Hg2Cl2",b:"Hg2(+2) dimer",fact:"Known as Calomel."},
+            {n:"Titanium(III) Chloride",f:"TiCl3",b:"Ti(+3) needs 3 Cl(-1)",fact:"Ziegler-Natta catalyst."},
+            {n:"Zirconium(IV) Oxide",f:"ZrO2",b:"Zr(+4) needs 2 O(-2)",fact:"Cubic Zirconia (fake diamond)."},
+            {n:"Silver(I) Oxide",f:"Ag2O",b:"Ag is usually +1",fact:"Used in watch batteries."},
+            {n:"Tungsten(VI) Oxide",f:"WO3",b:"W(+6) needs 3 O(-2)",fact:"Electrochromic windows."},
+            {n:"Uranium(VI) Fluoride",f:"UF6",b:"U(+6) needs 6 F(-1)",fact:"Gas used to enrich Uranium."},
+            {n:"Osmium(VIII) Oxide",f:"OsO4",b:"Os(+8) needs 4 O(-2)",fact:"Stains fat in microscopy."}
+        ];
+
+        // Level 4: Polyatomic Ions (Brackets)
+        const level4 = [
+            {n:"Calcium Nitrate",f:"Ca(NO3)2",b:"Ca(+2) needs 2 Nitrate(-1). Use brackets!",fact:"Fertilizer component."},
+            {n:"Ammonium Sulfate",f:"(NH4)2SO4",b:"2 Ammonium(+1) needed for Sulfate(-2)",fact:"Soil fertilizer."},
+            {n:"Magnesium Hydroxide",f:"Mg(OH)2",b:"Mg(+2) needs 2 Hydroxide(-1)",fact:"Milk of Magnesia."},
+            {n:"Calcium Phosphate",f:"Ca3(PO4)2",b:"3 Ca(+2) balances 2 Phosphate(-3)",fact:"Major part of bones."},
+            {n:"Aluminum Sulfate",f:"Al2(SO4)3",b:"2 Al(+3) balances 3 Sulfate(-2)",fact:"Water treatment chemical."},
+            {n:"Sodium Carbonate",f:"Na2CO3",b:"2 Na(+1) needed for Carbonate(-2)",fact:"Soda ash, making glass."},
+            {n:"Sodium Bicarbonate",f:"NaHCO3",b:"Na(+1) with Bicarbonate(-1)",fact:"Baking soda."},
+            {n:"Calcium Carbonate",f:"CaCO3",b:"Ca(+2) balances Carbonate(-2)",fact:"Chalk, limestone, marble."},
+            {n:"Potassium Permanganate",f:"KMnO4",b:"K(+1) with Permanganate(-1)",fact:"Deep purple disinfectant."},
+            {n:"Ammonium Nitrate",f:"NH4NO3",b:"Ammonium(+1) with Nitrate(-1)",fact:"Fertilizer and explosives."},
+            {n:"Copper(II) Nitrate",f:"Cu(NO3)2",b:"Cu(+2) needs 2 Nitrate(-1)",fact:"Blue firework color."},
+            {n:"Iron(III) Sulfate",f:"Fe2(SO4)3",b:"2 Fe(+3) balances 3 Sulfate(-2)",fact:"Mordant for dyeing."},
+            {n:"Lead(II) Acetate",f:"Pb(C2H3O2)2",b:"Pb(+2) with 2 Acetate",fact:"Sugar of Lead (Toxic sweetener)."},
+            {n:"Barium Sulfate",f:"BaSO4",b:"Ba(+2) balances Sulfate(-2)",fact:"X-ray contrast agent."},
+            {n:"Lithium Carbonate",f:"Li2CO3",b:"2 Li(+1) with Carbonate(-2)",fact:"Medication for bipolar disorder."},
+            {n:"Calcium Sulfate",f:"CaSO4",b:"Ca(+2) balances Sulfate(-2)",fact:"Gypsum / Drywall."},
+            {n:"Ammonium Chloride",f:"NH4Cl",b:"Ammonium(+1) with Chloride(-1)",fact:"Salty licorice flavor."},
+            {n:"Sodium Hypochlorite",f:"NaClO",b:"Na(+1) with Hypochlorite(-1)",fact:"Household bleach."},
+            {n:"Potassium Dichromate",f:"K2Cr2O7",b:"2 K(+1) with Dichromate(-2)",fact:"Orange oxidizing agent."},
+            {n:"Sodium Hydroxide",f:"NaOH",b:"Na(+1) with Hydroxide(-1)",fact:"Lye / Drain cleaner."},
+            {n:"Potassium Cyanide",f:"KCN",b:"K(+1) with Cyanide(-1)",fact:"Extremely toxic poison."},
+            {n:"Silver Nitrate",f:"AgNO3",b:"Ag(+1) with Nitrate(-1)",fact:"Stains skin black."},
+            {n:"Magnesium Sulfate",f:"MgSO4",b:"Mg(+2) balances Sulfate(-2)",fact:"Epsom salts."},
+            {n:"Calcium Hydroxide",f:"Ca(OH)2",b:"Ca(+2) needs 2 Hydroxide(-1)",fact:"Lime water."},
+            {n:"Aluminum Hydroxide",f:"Al(OH)3",b:"Al(+3) needs 3 Hydroxide(-1)",fact:"Antacid."},
+            {n:"Zinc Phosphate",f:"Zn3(PO4)2",b:"3 Zn(+2) balances 2 Phosphate(-3)",fact:"Dental cement."},
+            {n:"Iron(II) Sulfate",f:"FeSO4",b:"Fe(+2) balances Sulfate(-2)",fact:"Iron supplement."},
+            {n:"Ammonium Carbonate",f:"(NH4)2CO3",b:"2 Ammonium(+1) with Carbonate(-2)",fact:"Smelling salts."},
+            {n:"Potassium Chlorate",f:"KClO3",b:"K(+1) with Chlorate(-1)",fact:"Match heads."},
+            {n:"Sodium Thiosulfate",f:"Na2S2O3",b:"2 Na(+1) with Thiosulfate(-2)",fact:"Photographic fixer."}
+        ];
+
+        const levels = {
+            1: level1,
+            2: level2,
+            3: level3,
+            4: level4
+        };
+
+        // --- GAME STATE ---
+        let currentLevel = 1;
+        let questionQueue = [];
+        let currentIndex = 0;
+        let isAnswered = false;
+        
+        // Timer
+        let startTime = 0;
+        let timerInterval;
+        let penaltySeconds = 0;
+
+        // --- DOM ---
+        const menuScreen = document.getElementById('menu-screen');
+        const gameArea = document.getElementById('game-area');
+        const headerStats = document.getElementById('game-header-stats');
+        const timerDisplay = document.getElementById('timer-display');
+        const penaltyBox = document.getElementById('penalty-box');
+        
+        // --- LOCAL STORAGE ---
+        function loadBestTimes() {
+            document.querySelectorAll('.best-time').forEach(el => {
+                const lvl = el.dataset.level;
+                const time = localStorage.getItem(`chemLab_best_${lvl}`);
+                el.textContent = time ? formatTime(parseInt(time)) : '--:--';
+                if(time) el.classList.add('text-emerald-600', 'bg-emerald-50');
+            });
+        }
+        loadBestTimes();
+
+        // --- GAME LOGIC ---
+
+        function startGame(level) {
+            currentLevel = level;
+            // Select 10 random
+            const pool = levels[level];
+            questionQueue = [...pool].sort(() => 0.5 - Math.random()).slice(0, 10);
+            
+            currentIndex = 0;
+            penaltySeconds = 0;
+            
+            // UI Switch
+            menuScreen.classList.add('hidden');
+            gameArea.classList.remove('hidden');
+            headerStats.classList.remove('hidden');
+            document.getElementById('level-badge').textContent = `Level ${level}`;
+            
+            startTimer();
+            loadQuestion();
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            penaltyBox.style.visibility = 'hidden';
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime + (penaltySeconds * 1000);
+                timerDisplay.textContent = formatTime(elapsed);
+            }, 100);
+        }
+
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const m = Math.floor(totalSeconds / 60);
+            const s = totalSeconds % 60;
+            return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function loadQuestion() {
+            const q = questionQueue[currentIndex];
+            isAnswered = false;
+            
+            // Reset UI
+            document.getElementById('question-text').textContent = q.n;
+            const inp = document.getElementById('answer-input');
+            inp.value = '';
+            inp.disabled = false;
+            inp.focus();
+            
+            document.getElementById('feedback-area').classList.add('hidden');
+            document.getElementById('hint-area').classList.add('hidden');
+            document.getElementById('submit-btn').classList.remove('hidden');
+            document.getElementById('hint-btn').disabled = false;
+            document.getElementById('hint-btn').classList.remove('opacity-50');
+
+            // Progress
+            document.getElementById('question-counter').textContent = `${currentIndex + 1}/10`;
+            document.getElementById('progress-bar').style.width = `${(currentIndex / 10) * 100}%`;
+        }
+
+        function useHint() {
+            if(isAnswered) return;
+            
+            // Apply Penalty
+            penaltySeconds += 30;
+            
+            // Visual feedback for penalty
+            penaltyBox.style.visibility = 'visible';
+            penaltyBox.classList.add('shake');
+            setTimeout(() => penaltyBox.classList.remove('shake'), 500);
+
+            // Show Hint
+            const q = questionQueue[currentIndex];
+            document.getElementById('hint-text').textContent = `Look for elements: ${q.f.replace(/[0-9]/g, '')}. Remember: ${q.b}`;
+            document.getElementById('hint-area').classList.remove('hidden');
+            
+            // Disable button
+            document.getElementById('hint-btn').disabled = true;
+            document.getElementById('hint-btn').classList.add('opacity-50');
+        }
+
+        function checkAnswer() {
+            if(isAnswered) return;
+            
+            const inp = document.getElementById('answer-input');
+            const val = inp.value.trim().toLowerCase().replace(/\s/g, '');
+            const q = questionQueue[currentIndex];
+            const correct = q.f.toLowerCase();
+            
+            if(!val) return;
+
+            isAnswered = true;
+            inp.disabled = true;
+            document.getElementById('submit-btn').classList.add('hidden');
+            
+            const fb = document.getElementById('feedback-area');
+            fb.classList.remove('hidden');
+            
+            const title = document.getElementById('feedback-title');
+            const msg = document.getElementById('feedback-message');
+            const bd = document.getElementById('feedback-breakdown');
+            const fact = document.getElementById('fun-fact');
+
+            // Logic: Is it correct?
+            if(val === correct) {
+                handleCorrect(q, title, msg, bd);
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } else {
+                handleIncorrect(q, val, title, msg, bd);
+                document.getElementById('game-card').classList.add('shake');
+                setTimeout(() => document.getElementById('game-card').classList.remove('shake'), 500);
+            }
+
+            fact.classList.remove('hidden');
+            fact.innerHTML = `<strong>Did you know?</strong> ${q.fact}`;
+        }
+
+        function formatFormula(f) {
+            return f.replace(/(\d+)/g, '<span class="sub">$1</span>');
+        }
+
+        function handleCorrect(q, title, msg, bd) {
+            title.textContent = "Correct!";
+            title.className = "font-bold text-xl mb-1 text-emerald-600";
+            msg.innerHTML = `Formula: <span class="chem-font font-bold">${formatFormula(q.f)}</span>`;
+            bd.textContent = q.b;
+            document.getElementById('feedback-area').className = "mt-6 rounded-xl p-5 border-l-4 shadow-sm fade-in bg-emerald-50 border-emerald-500";
+        }
+
+        function handleIncorrect(q, val, title, msg, bd) {
+            title.textContent = "Incorrect";
+            title.className = "font-bold text-xl mb-1 text-rose-600";
+            msg.innerHTML = `Correct: <span class="chem-font font-bold text-slate-900">${formatFormula(q.f)}</span>`;
+            bd.textContent = `Breakdown: ${q.b}`;
+            document.getElementById('feedback-area').className = "mt-6 rounded-xl p-5 border-l-4 shadow-sm fade-in bg-rose-50 border-rose-500";
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if(currentIndex < 10) {
+                loadQuestion();
+            } else {
+                endGame();
+            }
+        }
+
+        function endGame() {
+            clearInterval(timerInterval);
+            const finalTimeMs = Date.now() - startTime + (penaltySeconds * 1000);
+            
+            // Check High Score
+            const stored = localStorage.getItem(`chemLab_best_${currentLevel}`);
+            let isNewRecord = false;
+            
+            if(!stored || finalTimeMs < parseInt(stored)) {
+                localStorage.setItem(`chemLab_best_${currentLevel}`, finalTimeMs);
+                isNewRecord = true;
+            }
+
+            // Show End Screen (overwrite card)
+            const card = document.getElementById('game-card');
+            card.innerHTML = `
+                <div class="p-10 text-center fade-in">
+                    <div class="inline-block p-4 ${isNewRecord ? 'bg-yellow-100 text-yellow-600' : 'bg-indigo-100 text-indigo-600'} rounded-full mb-6">
+                        <i data-lucide="${isNewRecord ? 'trophy' : 'clock'}" class="w-12 h-12"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">${isNewRecord ? 'New Personal Best!' : 'Level Complete'}</h2>
+                    
+                    <div class="text-5xl font-mono font-bold text-slate-800 my-6">${formatTime(finalTimeMs)}</div>
+                    
+                    ${penaltySeconds > 0 ? `<p class="text-rose-500 text-sm font-bold mb-6">Includes +${penaltySeconds}s penalty</p>` : ''}
+                    
+                    <button onclick="goToMenu()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2">
+                        Back to Levels
+                    </button>
+                </div>
+            `;
+            loadBestTimes(); // Update menu in background
+            confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+            lucide.createIcons();
+        }
+
+        function goToMenu() {
+            gameArea.classList.add('hidden');
+            headerStats.classList.add('hidden');
+            menuScreen.classList.remove('hidden');
+            loadBestTimes();
+        }
+
+        function toggleGlossary() {
+            const p = document.getElementById('glossary-panel');
+            const o = document.getElementById('glossary-overlay');
+            p.classList.toggle('translate-x-full');
+            o.classList.toggle('hidden');
+        }
+
+        // Enter Key
+        document.getElementById('answer-input').addEventListener('keypress', (e) => {
+            if(e.key === 'Enter') checkAnswer();
+        });
+
+        lucide.createIcons();
+
+    </script>
+</body>
+</html>
